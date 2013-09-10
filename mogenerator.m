@@ -215,6 +215,24 @@ NSString  *gCustomBaseClassForced;
     return [[self noninheritedAttributes] filteredArrayUsingPredicate:predicate];
 }
 
+#pragma mark Protocol and Mock details to support Unit Tests
+
+- (BOOL)hasAbstractionProtocol {
+    return self.userInfo[@"abstractionProtocol"];
+}
+
+- (NSString *)abstractionProtocol {
+    return self.userInfo[@"abstractionProtocol"];
+}
+
+- (BOOL)hasMockClass {
+    return self.userInfo[@"mockClass"];
+}
+
+- (NSString *)mockClass {
+    return self.userInfo[@"mockClass"];
+}
+
 #pragma mark Fetch Request support
 
 - (NSDictionary*)fetchRequestTemplates {
@@ -601,6 +619,8 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     {@"output-dir",         'O',    DDGetoptRequiredArgument},
     {@"machine-dir",        'M',    DDGetoptRequiredArgument},
     {@"human-dir",          'H',    DDGetoptRequiredArgument},
+    {@"abstraction-dir",    'A',    DDGetoptRequiredArgument},
+    {@"mock-dir",           'K',    DDGetoptRequiredArgument},
     {@"template-group",     0,      DDGetoptRequiredArgument},
     {@"list-source-files",  0,      DDGetoptNoArgument},
     {@"orphaned",           0,      DDGetoptNoArgument},
@@ -630,6 +650,8 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
            "  -O, --output-dir DIR          Output directory\n"
            "  -M, --machine-dir DIR         Output directory for machine files\n"
            "  -H, --human-dir DIR           Output directory for human files\n"
+           "  -A, --abstraction-dir DIR     Output directory for abstraction files\n"
+           "  -K, --mock-dir DIR            Output directory for mock files\n"
            "      --list-source-files       Only list model-related source files\n"
            "      --orphaned                Only list files whose entities no longer exist\n"
            "      --version                 Display version and exit\n"
@@ -836,6 +858,8 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     [self validateOutputPath:outputDir forType:@"Output"];
     [self validateOutputPath:machineDir forType:@"Machine Output"];
     [self validateOutputPath:humanDir forType:@"Human Output"];
+    [self validateOutputPath:abstractionDir forType:@"Abstraction Output"];
+    [self validateOutputPath:mockDir forType:@"Mock Output"];
 
     if (outputDir == nil)
         outputDir = @"";
@@ -843,13 +867,17 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
         machineDir = outputDir;
     if (humanDir == nil)
         humanDir = outputDir;
+    if (abstractionDir == nil)
+        abstractionDir = outputDir;
+    if (mockDir == nil)
+        mockDir = outputDir;
 
     NSFileManager *fm = [NSFileManager defaultManager];
     
     if (_orphaned) {
         NSMutableDictionary *entityFilesByName = [NSMutableDictionary dictionary];
         
-        NSArray *srcDirs = [NSArray arrayWithObjects:machineDir, humanDir, nil];
+        NSArray *srcDirs = [NSArray arrayWithObjects:machineDir, humanDir, abstractionDir, mockDir, nil];
         nsenumerate(srcDirs, NSString, srcDir) {
             if (![srcDir length]) {
                 srcDir = [fm currentDirectoryPath];
@@ -901,6 +929,8 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     
     int machineFilesGenerated = 0;        
     int humanFilesGenerated = 0;
+    int abstractionFilesGenerated = 0;
+    int mockFilesGenerated = 0;
     
     if (model) {
         MiscMergeEngine *machineH = engineWithTemplateDesc([self templateDescNamed:@"machine.h.motemplate"]);
@@ -911,23 +941,38 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
         assert(humanH);
         MiscMergeEngine *humanM = engineWithTemplateDesc([self templateDescNamed:@"human.m.motemplate"]);
         assert(humanM);
+        MiscMergeEngine *abstractionH = engineWithTemplateDesc([self templateDescNamed:@"abstraction.h.motemplate"]);
+        assert(abstractionH);
+        MiscMergeEngine *mockH = engineWithTemplateDesc([self templateDescNamed:@"mock.h.motemplate"]);
+        assert(mockH);
+        MiscMergeEngine *mockM = engineWithTemplateDesc([self templateDescNamed:@"mock.m.motemplate"]);
+        assert(mockM);
         
         // Add the template var dictionary to each of the merge engines
         [machineH setEngineValue:templateVar forKey:kTemplateVar];
         [machineM setEngineValue:templateVar forKey:kTemplateVar];
         [humanH setEngineValue:templateVar forKey:kTemplateVar];
         [humanM setEngineValue:templateVar forKey:kTemplateVar];
+        [abstractionH setEngineValue:templateVar forKey:kTemplateVar];
+        [mockH setEngineValue:templateVar forKey:kTemplateVar];
+        [mockM setEngineValue:templateVar forKey:kTemplateVar];
         
         NSMutableArray  *humanMFiles = [NSMutableArray array],
                         *humanHFiles = [NSMutableArray array],
                         *machineMFiles = [NSMutableArray array],
-                        *machineHFiles = [NSMutableArray array];
+                        *machineHFiles = [NSMutableArray array],
+                        *abstractionHFiles = [NSMutableArray array],
+                        *mockHFiles = [NSMutableArray array],
+                        *mockMFiles = [NSMutableArray array];
         
         nsenumerate ([model entitiesWithACustomSubclassInConfiguration:configuration verbose:YES], NSEntityDescription, entity) {
             NSString *generatedMachineH = [machineH executeWithObject:entity sender:nil];
             NSString *generatedMachineM = [machineM executeWithObject:entity sender:nil];
             NSString *generatedHumanH = [humanH executeWithObject:entity sender:nil];
             NSString *generatedHumanM = [humanM executeWithObject:entity sender:nil];
+            NSString *generatedAbstractionH = [abstractionH executeWithObject:entity sender:nil];
+            NSString *generatedMockH = [mockH executeWithObject:entity sender:nil];
+            NSString *generatedMockM = [mockM executeWithObject:entity sender:nil];
             
             NSString *entityClassName = [entity managedObjectClassName];
             BOOL machineDirtied = NO;
@@ -996,6 +1041,58 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
                 }
             }
             
+            // Abstraction Protocol header files.
+            if (entity.hasAbstractionProtocol) {
+                
+                NSString *abstractionHFileName = [abstractionDir stringByAppendingPathComponent:
+                                                  [NSString stringWithFormat:@"%@.h", entity.abstractionProtocol]];
+                if (_listSourceFiles) {
+                    [abstractionHFiles addObject:abstractionHFileName];
+                } else {
+                    if ([fm regularFileExistsAtPath:abstractionHFileName]) {
+                        if (machineDirtied)
+                            [fm touchPath:abstractionHFileName];
+                    } else {
+                        [generatedAbstractionH writeToFile:abstractionHFileName atomically:NO encoding:NSUTF8StringEncoding error:nil];
+                        abstractionFilesGenerated++;
+                    }
+                }
+            }
+            
+            // Mock files.
+            if (entity.hasMockClass) {
+                
+                // Mock header files.
+                NSString *mockHFileName = [mockDir stringByAppendingPathComponent:
+                                                  [NSString stringWithFormat:@"%@.h", entity.mockClass]];
+                if (_listSourceFiles) {
+                    [mockHFiles addObject:mockHFileName];
+                } else {
+                    if ([fm regularFileExistsAtPath:mockHFileName]) {
+                        if (machineDirtied)
+                            [fm touchPath:mockHFileName];
+                    } else {
+                        [generatedMockH writeToFile:mockHFileName atomically:NO encoding:NSUTF8StringEncoding error:nil];
+                        mockFilesGenerated++;
+                    }
+                }
+                
+                // Mock source files.
+                NSString *mockMFileName = [mockDir stringByAppendingPathComponent:
+                                           [NSString stringWithFormat:@"%@.m", entity.mockClass]];
+                if (_listSourceFiles) {
+                    [mockMFiles addObject:mockMFileName];
+                } else {
+                    if ([fm regularFileExistsAtPath:mockMFileName]) {
+                        if (machineDirtied)
+                            [fm touchPath:mockMFileName];
+                    } else {
+                        [generatedMockM writeToFile:mockMFileName atomically:NO encoding:NSUTF8StringEncoding error:nil];
+                        mockFilesGenerated++;
+                    }
+                }
+            }
+            
             [mfileContent appendFormat:@"#import \"%@\"\n#import \"%@\"\n",
                 [humanMFileName lastPathComponent], [machineMFileName lastPathComponent]];
             
@@ -1003,7 +1100,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
         }
         
         if (_listSourceFiles) {
-            NSArray *filesList = [NSArray arrayWithObjects:humanMFiles, humanHFiles, machineMFiles, machineHFiles, nil];
+            NSArray *filesList = [NSArray arrayWithObjects:humanMFiles, humanHFiles, machineMFiles, machineHFiles, abstractionHFiles, mockHFiles, mockMFiles, nil];
             nsenumerate (filesList, NSArray, files) {
                 nsenumerate (files, NSString, fileName) {
                     ddprintf(@"%@\n", fileName);
@@ -1033,6 +1130,14 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 
         if (hfileGenerated) {
             printf("Aggregate header file was also generated to %s.\n", [hfilePath fileSystemRepresentation]);
+        }
+        
+        if (abstractionFilesGenerated > 0) {
+            printf("%d abstraction header files generated.\n", abstractionFilesGenerated);
+        }
+        
+        if (mockFilesGenerated > 0) {
+            printf("%d mock files generated.\n", mockFilesGenerated);
         }
     }
     

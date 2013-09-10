@@ -26,6 +26,12 @@
 - (NSString*)forcedCustomBaseClass;
 - (void)_processPredicate:(NSPredicate*)predicate_ bindings:(NSMutableArray*)bindings_;
 - (NSArray*)prettyFetchRequests;
+#pragma mark Protocol and Mock details to support Unit Tests
+- (BOOL)hasAbstractionProtocol;
+- (NSString *)abstractionProtocol;
+- (BOOL)hasMockClass;
+- (NSString *)objectMockClass;
+
 @end
 
 @interface NSAttributeDescription (typing)
@@ -69,6 +75,8 @@
     NSString              *outputDir;
     NSString              *machineDir;
     NSString              *humanDir;
+    NSString              *abstractionDir;
+    NSString              *mockDir;
     NSString              *templateGroup;
     BOOL                  _help;
     BOOL                  _version;
