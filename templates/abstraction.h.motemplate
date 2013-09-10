@@ -3,7 +3,7 @@
 // This allows for Mock object to be used instead of Core Data objects, which assists in Unit Testing.
 
 #import <Foundation/Foundation.h>
-<$if hasCustomSuperentity$><$if superentity.hasAbstractionProtocol$>#import "<$superentity.abstractionProtocol$>.h"<$endif$><$endif$>
+<$if hasInheritedProtocol$>#import "<$inheritedProtocol$>.h"<$endif$>
 
 <$if noninheritedAttributes.@count > 0$>
 extern const struct <$managedObjectClassName$>Attributes {<$foreach Attribute noninheritedAttributes do$>
@@ -40,7 +40,7 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 <$endforeach do$>
 <$else$>@class <$Attribute.objectAttributeClassName$>;<$endif$><$endif$>
 <$endforeach do$>
-@protocol <$abstractionProtocol$> <$if hasCustomSuperentity$><$if superentity.hasAbstractionProtocol$><<$superentity.abstractionProtocol$>><$endif$><$endif$>
+@protocol <$abstractionProtocol$>  <$if hasInheritedProtocol$><<$inheritedProtocol$>><$endif$>
 
 <$foreach Attribute noninheritedAttributes do$>
 <$if Attribute.hasDefinedAttributeType$>
@@ -87,18 +87,6 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 //- (BOOL)validate<$Relationship.name.initialCapitalString$>:(id*)value_ error:(NSError**)error_;
 <$endif$>
 <$endforeach do$>
-<$foreach FetchRequest prettyFetchRequests do$>
-<$if FetchRequest.singleResult$>
-+ (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>;
-+ (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>error:(NSError**)error_;
-<$else$>
-+ (NSArray*)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>;
-+ (NSArray*)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>error:(NSError**)error_;
-<$endif$>
-<$endforeach do$>
-<$foreach FetchedProperty noninheritedFetchedProperties do$>
-@property (nonatomic, readonly) NSArray *<$FetchedProperty.name$>;
-<$endforeach do$>
 
 <$foreach Relationship noninheritedRelationships do$><$if Relationship.isToMany$>
 - (void)add<$Relationship.name.initialCapitalString$>:(<$Relationship.immutableCollectionClassName$>*)value_;
@@ -127,8 +115,13 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 - (<$Relationship.mutableCollectionClassName$>*)primitive<$Relationship.name.initialCapitalString$>;
 - (void)setPrimitive<$Relationship.name.initialCapitalString$>:(<$Relationship.mutableCollectionClassName$>*)value;
 <$else$>
+<$if Relationship.destinationEntity.hasAbstractionProtocol$>
+- (id<<$Relationship.destinationEntity.abstractionProtocol$>>)primitive<$Relationship.name.initialCapitalString$>;
+- (void)setPrimitive<$Relationship.name.initialCapitalString$>:(id<<$Relationship.destinationEntity.abstractionProtocol$>>)value;
+<$else$>
 - (<$Relationship.destinationEntity.managedObjectClassName$>*)primitive<$Relationship.name.initialCapitalString$>;
 - (void)setPrimitive<$Relationship.name.initialCapitalString$>:(<$Relationship.destinationEntity.managedObjectClassName$>*)value;
+<$endif$>
 <$endif$>
 <$endforeach do$>
 @end

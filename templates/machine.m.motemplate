@@ -229,21 +229,24 @@ const struct <$managedObjectClassName$>UserInfo <$managedObjectClassName$>UserIn
 <$endif$>
 @end
 
-<$foreach Relationship noninheritedRelationships do$><$if Relationship.isToMany$>
+<$foreach Relationship noninheritedRelationships do$><$if Relationship.isToMany$><$if Relationship.jr_isOrdered$>
 @implementation _<$managedObjectClassName$> (<$Relationship.name.initialCapitalString$>CoreDataGeneratedAccessors)
 - (void)add<$Relationship.name.initialCapitalString$>:(<$Relationship.immutableCollectionClassName$>*)value_ {
-	[self.<$Relationship.name$>Set unionOrderedSet:value_];
+	[self.<$Relationship.name$>Set union<$if Relationship.jr_isOrdered$>Ordered<$else$>Set:value_];
 }
 - (void)remove<$Relationship.name.initialCapitalString$>:(<$Relationship.immutableCollectionClassName$>*)value_ {
-	[self.<$Relationship.name$>Set minusOrderedSet:value_];
+	[self.<$Relationship.name$>Set minus<$if Relationship.jr_isOrdered$>Ordered<$else$>Set:value_];
 }
-- (void)add<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.managedObjectClassName$>*)value_ {
+- (void)add<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.typeDeclaration$>)value_ {
 	[self.<$Relationship.name$>Set addObject:value_];
 }
-- (void)remove<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.managedObjectClassName$>*)value_ {
+- (void)remove<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.typeDeclaration$>)value_ {
 	[self.<$Relationship.name$>Set removeObject:value_];
 }
 @end
+<$else$>
+
+<$endif$>
 <$endif$><$endforeach do$>
 
 

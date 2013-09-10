@@ -6,7 +6,8 @@
 <$else$><$if hasCustomBaseCaseImport$>#import <$baseClassImport$><$else$>#import "<$customSuperentity$>.h"<$endif$><$endif$><$endif$>
 <$if hasAbstractionProtocol$>#import "<$abstractionProtocol$>.h"<$endif$>
 
-<$if hasAbstractionProtocol$><$else$>
+<$if hasAbstractionProtocol$>// Declared in Protocol<$else$>
+
 <$if noninheritedAttributes.@count > 0$>
 extern const struct <$managedObjectClassName$>Attributes {<$foreach Attribute noninheritedAttributes do$>
 	<$if TemplateVar.arc$>__unsafe_unretained<$endif$> NSString *<$Attribute.name$>;<$endforeach do$>
@@ -30,8 +31,10 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 	<$if TemplateVar.arc$>__unsafe_unretained<$endif$> NSString *<$UserInfo.key$>;<$endforeach do$>
 } <$managedObjectClassName$>UserInfo;
 <$endif$>
+
 <$endif$>
-<$foreach Relationship noninheritedRelationships do$>@class <$Relationship.destinationEntity.managedObjectClassName$>;
+
+<$foreach Relationship noninheritedRelationships do$><$if Relationship.destinationEntity.hasAbstractionProtocol$>@protocol <$Relationship.destinationEntity.abstractionProtocol$>;<$else$>@class <$Relationship.destinationEntity.managedObjectClassName$>;<$endif$>
 <$endforeach do$>
 <$foreach Attribute noninheritedAttributes do$>
 <$if Attribute.hasTransformableAttributeType$>
@@ -40,6 +43,26 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 <$endforeach do$>
 <$else$>@class <$Attribute.objectAttributeClassName$>;<$endif$><$endif$>
 <$endforeach do$>
+
+
+// This is to solve/fix
+<$foreach FetchRequest prettyFetchRequests do$>
+<$if FetchRequest.singleResult$>
+
+<$foreach Binding FetchRequest.bindings do2$>
+
+<$if Binding.hasAbstractionProtocol$>@protocol <$Binding.abstractionProtocol$>;
+<$else$>@class <$Binding.name$>;
+
+<$endif$>
+
+<$endforeach do2$>
+
+<$endif$>
+<$endforeach do$>
+
+
+
 @interface <$managedObjectClassName$>ID : <$if hasSuperentity$><$customSuperentity$>ID<$else$>NSManagedObjectID<$endif$> {}
 @end
 
@@ -96,11 +119,12 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 <$endforeach do$>
 <$foreach FetchRequest prettyFetchRequests do$>
 <$if FetchRequest.singleResult$>
-+ (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>;
-+ (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>error:(NSError**)error_;
++ (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$if Binding.hasAbstractionProtocol$>id<<$Binding.abstractionProtocol$>><$else$><$Binding.type$><$endif$>)<$Binding.name$>_ <$endforeach do2$>;
++ (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$if Binding.hasAbstractionProtocol$>id<<$Binding.abstractionProtocol$>><$else$><$Binding.type$><$endif$>)<$Binding.name$>_ <$endforeach do2$>error:(NSError**)error_;
 <$else$>
-+ (NSArray*)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>;
-+ (NSArray*)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>error:(NSError**)error_;
+// TODO - Solve/Fix @protocol issue.
+// + (NSArray*)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$if Binding.hasAbstractionProtocol$>id<<$Binding.abstractionProtocol$>><$else$><$Binding.type$><$endif$>)<$Binding.name$>_ <$endforeach do2$>;
+// + (NSArray*)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$if Binding.hasAbstractionProtocol$>id<<$Binding.abstractionProtocol$>><$else$><$Binding.type$><$endif$>)<$Binding.name$>_ <$endforeach do2$>error:(NSError**)error_;
 <$endif$>
 <$endforeach do$>
 <$foreach FetchedProperty noninheritedFetchedProperties do$>
@@ -121,13 +145,8 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 @interface _<$managedObjectClassName$> (<$Relationship.name.initialCapitalString$>CoreDataGeneratedAccessors)
 - (void)add<$Relationship.name.initialCapitalString$>:(<$Relationship.immutableCollectionClassName$>*)value_;
 - (void)remove<$Relationship.name.initialCapitalString$>:(<$Relationship.immutableCollectionClassName$>*)value_;
-<$if Relationship.destinationEntity.hasAbstractionProtocol$>
-- (void)add<$Relationship.name.initialCapitalString$>Object:(id<<$Relationship.destinationEntity.abstractionProtocol$>>)value_;
-- (void)remove<$Relationship.name.initialCapitalString$>Object:(id<<$Relationship.destinationEntity.abstractionProtocol$>>)value_;
-<$else$>
-- (void)add<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.managedObjectClassName$>*)value_;
-- (void)remove<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.managedObjectClassName$>*)value_;
-<$endif$>
+- (void)add<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.typeDeclaration$>)value_;
+- (void)remove<$Relationship.name.initialCapitalString$>Object:(<$Relationship.destinationEntity.typeDeclaration$>)value_;
 @end
 <$endif$><$endforeach do$>
 
@@ -147,8 +166,13 @@ extern const struct <$managedObjectClassName$>UserInfo {<$foreach UserInfo userI
 - (<$Relationship.mutableCollectionClassName$>*)primitive<$Relationship.name.initialCapitalString$>;
 - (void)setPrimitive<$Relationship.name.initialCapitalString$>:(<$Relationship.mutableCollectionClassName$>*)value;
 <$else$>
+<$if Relationship.destinationEntity.hasAbstractionProtocol$>
+- (id<<$Relationship.destinationEntity.abstractionProtocol$>>)primitive<$Relationship.name.initialCapitalString$>;
+- (void)setPrimitive<$Relationship.name.initialCapitalString$>:(id<<$Relationship.destinationEntity.abstractionProtocol$>>)value;
+<$else$>
 - (<$Relationship.destinationEntity.managedObjectClassName$>*)primitive<$Relationship.name.initialCapitalString$>;
 - (void)setPrimitive<$Relationship.name.initialCapitalString$>:(<$Relationship.destinationEntity.managedObjectClassName$>*)value;
+<$endif$>
 <$endif$>
 <$endforeach do$>
 @end
