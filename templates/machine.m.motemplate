@@ -229,7 +229,7 @@ const struct <$managedObjectClassName$>UserInfo <$managedObjectClassName$>UserIn
 <$endif$>
 @end
 
-<$foreach Relationship noninheritedRelationships do$><$if Relationship.isToMany$><$if Relationship.jr_isOrdered$>
+<$foreach Relationship noninheritedRelationships do$><$if Relationship.isToMany$>
 @implementation _<$managedObjectClassName$> (<$Relationship.name.initialCapitalString$>CoreDataGeneratedAccessors)
 - (void)add<$Relationship.name.initialCapitalString$>:(<$Relationship.immutableCollectionClassName$>*)value_ {
 	[self.<$Relationship.name$>Set unionOrderedSet:value_];
@@ -244,6 +244,6 @@ const struct <$managedObjectClassName$>UserInfo <$managedObjectClassName$>UserIn
 	[self.<$Relationship.name$>Set removeObject:value_];
 }
 @end
-<$endif$><$endif$><$endforeach do$>
+<$endif$><$endforeach do$>
 
 
