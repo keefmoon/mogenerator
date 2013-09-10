@@ -113,6 +113,8 @@ const struct <$managedObjectClassName$>UserInfo <$managedObjectClassName$>UserIn
 @dynamic <$FetchedProperty.name$>;
 <$endforeach do$>
 
+// Remove until I can fix the import problem
+/*
 <$foreach FetchRequest prettyFetchRequests do$>
 <$if FetchRequest.singleResult$>
 + (id)fetch<$FetchRequest.name.initialCapitalString$>:(NSManagedObjectContext*)moc_ <$foreach Binding FetchRequest.bindings do2$><$Binding.name$>:(<$Binding.type$>)<$Binding.name$>_ <$endforeach do2$>{
@@ -204,6 +206,8 @@ const struct <$managedObjectClassName$>UserInfo <$managedObjectClassName$>UserIn
 }
 <$endif$>
 <$endforeach do$>
+*/
+
 <$if TemplateVar.frc$>
 #if TARGET_OS_IPHONE
 <$foreach Relationship noninheritedRelationships do$>
