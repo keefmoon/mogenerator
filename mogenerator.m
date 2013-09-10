@@ -233,6 +233,23 @@ NSString  *gCustomBaseClassForced;
     return self.userInfo[@"mockClass"];
 }
 
+- (NSString *)typeDeclaration {
+    if ([self hasAbstractionProtocol]) {
+        return [NSString stringWithFormat:@"id<%@>", self.abstractionProtocol];
+    } else {
+        return [NSString stringWithFormat:@"%@ *", self.managedObjectClassName];
+    }
+}
+
+- (BOOL)hasInheritedProtocol {
+    return self.hasCustomSuperentity && self.superentity.hasAbstractionProtocol;
+}
+
+- (NSString *)inheritedProtocol {
+    return self.superentity.abstractionProtocol;
+}
+
+
 #pragma mark Fetch Request support
 
 - (NSDictionary*)fetchRequestTemplates {
@@ -270,7 +287,7 @@ NSString  *gCustomBaseClassForced;
         assert(property);
     }
     
-    return [entity managedObjectClassName];
+    return [entity typeDeclaration];
 }
 
 // auxiliary function
@@ -306,13 +323,23 @@ NSString  *gCustomBaseClassForced;
                 
                 NSString *type = nil;
                 
-                NSAttributeDescription *attribute = [[self attributesByName] objectForKey:[lhs keyPath]];
-                if (attribute) {
+                NSPropertyDescription *property = [[self propertiesByName] objectForKey:[lhs keyPath]];
+                
+                if ([property isKindOfClass:[NSAttributeDescription class]]) {
+                    
+                    NSAttributeDescription *attribute = (NSAttributeDescription *)property;
                     type = [attribute objectAttributeClassName];
+                    type = [type stringByAppendingString:@"*"];
+                    
+                } else if ([property isKindOfClass:[NSRelationshipDescription class]]) {
+                    
+                    NSRelationshipDescription *relationship = (NSRelationshipDescription *)property;
+                    type = [NSString stringWithFormat:@"id<%@>", relationship.destinationEntity.typeDeclaration];
+                    
                 } else {
                     type = [self _resolveKeyPathType:[lhs keyPath]];
                 }
-                type = [type stringByAppendingString:@"*"];
+                
                 // make sure that no repeated variables are entered here.
                 if (![self bindingsArray:bindings_ containsVariableNamed:[rhs variable]]) {
                     [bindings_ addObject:[NSDictionary dictionaryWithObjectsAndKeys:
@@ -441,7 +468,8 @@ NSString  *gCustomBaseClassForced;
         if (!result) {
             result = @"NSObject";
         }
-    } else {
+    }
+    else {
         result = [self attributeValueClassName];
     }
     return result;
