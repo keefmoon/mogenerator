@@ -30,7 +30,12 @@
 - (BOOL)hasAbstractionProtocol;
 - (NSString *)abstractionProtocol;
 - (BOOL)hasMockClass;
-- (NSString *)objectMockClass;
+- (NSString *)mockClass;
+- (NSString *)typeDeclaration;
+- (BOOL)hasInheritedProtocol;
+- (NSString *)inheritedProtocol;
+- (BOOL)hasInheritedMockClass;
+- (NSString *)inheritedMockClass;
 
 @end
 

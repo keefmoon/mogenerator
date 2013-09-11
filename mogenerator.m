@@ -218,7 +218,8 @@ NSString  *gCustomBaseClassForced;
 #pragma mark Protocol and Mock details to support Unit Tests
 
 - (BOOL)hasAbstractionProtocol {
-    return self.userInfo[@"abstractionProtocol"];
+    
+    return self.userInfo[@"abstractionProtocol"] != nil;
 }
 
 - (NSString *)abstractionProtocol {
@@ -226,7 +227,8 @@ NSString  *gCustomBaseClassForced;
 }
 
 - (BOOL)hasMockClass {
-    return self.userInfo[@"mockClass"];
+    
+    return self.userInfo[@"mockClass"] != nil;
 }
 
 - (NSString *)mockClass {
@@ -242,13 +244,20 @@ NSString  *gCustomBaseClassForced;
 }
 
 - (BOOL)hasInheritedProtocol {
-    return self.hasCustomSuperentity && self.superentity.hasAbstractionProtocol;
+    return self.superentity.hasAbstractionProtocol;
 }
 
 - (NSString *)inheritedProtocol {
     return self.superentity.abstractionProtocol;
 }
 
+- (BOOL)hasInheritedMockClass {
+    return self.hasCustomSuperentity && self.superentity.hasMockClass;
+}
+
+- (NSString *)inheritedMockClass {
+    return self.hasInheritedMockClass ? self.superentity.mockClass : @"NSObject";
+}
 
 #pragma mark Fetch Request support
 
